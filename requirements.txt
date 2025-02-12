@@ -5,3 +5,8 @@ PyJWT
 django-qrcode
 cryptography
 Pillow
+celery 
+redis 
+django-celery-beat
+gevent
+python-dotenv

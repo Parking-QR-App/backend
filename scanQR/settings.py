@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from celery.schedules import crontab
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from a .env file
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,9 +44,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-    'api',
+    'django_celery_results',
+    'django_celery_beat',
+    'auth_service',
+    'qr_service'
 ]
 
 MIDDLEWARE = [
@@ -52,6 +61,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "auth_service.middleware.BlockBlacklistedTokensMiddleware",
 ]
 
 ROOT_URLCONF = 'scanQR.urls'
@@ -59,7 +69,7 @@ ROOT_URLCONF = 'scanQR.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'email_templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -68,6 +78,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'debug': True,
         },
     },
 ]
@@ -104,6 +115,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'auth_service.User'
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -111,12 +124,36 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Short-lived access token for security
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),  # Long-lived refresh token for persistent login
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Short-lived access token for security
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=60),  # Long-lived refresh token for persistent login
     'ROTATE_REFRESH_TOKENS': True,  # Issue a new refresh token when the current one is used
     'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens after rotation
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',  # Ensure it aligns with your User model
+    'USER_ID_CLAIM': 'user_id',
 }
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis message broker
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+# Store Celery task results
+CELERY_RESULT_BACKEND = 'django-db'
+
+# Celery Beat Config (For scheduled tasks)
+CELERY_BEAT_SCHEDULE = {
+    'clear_expired_otps_every_10_min': {
+        'task': 'auth_service.tasks.clear_expired_otps',
+        'schedule': crontab(minute='*/10'),
+    },
+}
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'riyaanshmittal14@gmail.com'  # Make sure to set this in your environment
+EMAIL_HOST_PASSWORD = 'deic hepe pymj nhyq'  # And this too
 
 
 # Internationalization
