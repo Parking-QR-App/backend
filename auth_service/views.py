@@ -59,8 +59,13 @@ class VerifyOTPView(APIView):
             refresh = RefreshToken.for_user(user)
 
             return Response({
-                'access_token': str(refresh.access_token),
-                'refresh_token': str(refresh),
+                'data': {
+                    'access_token': str(refresh.access_token),
+                    'refresh_token': str(refresh),
+                    'first_name': user.first_name if user.first_name else "",
+                    'last_name': user.last_name if user.last_name else "",
+                    'email': user.email if user.email else ""
+                },
                 'message': 'Login successful',
                 'status': status.HTTP_200_OK
             }, status=status.HTTP_200_OK)
@@ -70,6 +75,7 @@ class VerifyOTPView(APIView):
             'errors': serializer.errors,
             'status': status.HTTP_400_BAD_REQUEST
         }, status=status.HTTP_400_BAD_REQUEST)
+
     
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
