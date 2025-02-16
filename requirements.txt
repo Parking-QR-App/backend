@@ -10,3 +10,4 @@ redis
 django-celery-beat
 gevent
 python-dotenv
+django-celery-results
