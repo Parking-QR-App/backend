@@ -11,3 +11,4 @@ django-celery-beat
 gevent
 python-dotenv
 django-celery-results
+django-cors-headers
